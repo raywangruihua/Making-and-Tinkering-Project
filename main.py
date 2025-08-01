@@ -147,10 +147,12 @@ def count_cells():
 	gauth.LocalWebserverAuth()
 	drive = GoogleDrive(gauth)
 
-	drive = GoogleDrive(gauth) # authentication
+	drive = GoogleDrive(gauth) # authentication, requires client_secrets.json to function
 
-	input_folder = drive.ListFile({'q' : "'1d2YUfW8d4tL57rssurazZXXzqD_GaEK8' in parents and trashed=false"}).GetList()
-	output_folder = drive.ListFile({'q' : "'1YPrlwGlUEjJe-BMzjESk201zpbyNCwLQ' in parents and trashed=false"}).GetList()
+	input_folder_id = ""
+	output_folder_id = "" # these are the folder ids found in my google drive
+	input_folder = drive.ListFile({'q' : f"'{input_folder_id}' in parents and trashed=false"}).GetList()
+	output_folder = drive.ListFile({'q' : f"'{output_folder_id}' in parents and trashed=false"}).GetList()
 
 	try:
 		for f in input_folder: # clear input folder
@@ -168,7 +170,7 @@ def count_cells():
 	for f in tqdm(files, desc="Uploading files"):
 		metadata = {
 			'parents': [
-				{"id": "1d2YUfW8d4tL57rssurazZXXzqD_GaEK8"} # input folder id
+				{"id": f"{input_folder_id}"}
 			],
 			'title': f,
 			'mimeType': 'image/jpeg'
