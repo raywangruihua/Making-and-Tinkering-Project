@@ -9,6 +9,7 @@ Shown below is the Autoscope setup.
 <img src="https://github.com/user-attachments/assets/cbe82beb-ff4f-4d17-aad4-15c488782f29" width="400"/>
 
 Close-up of the 2 controllers.
+</br>
 <img src="https://github.com/user-attachments/assets/b3e0eb6c-d14f-4887-a5f2-2a92b9e2d1aa" width="400"/>
 
 The main code is stored on the Raspberry Pi; however, due to limitations in local computation capabilities, some code is executed on GoogleColab. This enables the use of GPUs, which accelerate many of the machine learning components in our project.
