@@ -1,6 +1,6 @@
 As part of a summer-long multidisciplinary engineering project, my group and I designed and built an automatic microscope. We named it the Autoscope. 
 
-The Autoscope zooms in on the specimen placed within it and captures a clear image, then either identifies the cell in the specimen or takes additional images to store in a dataset. This dataset is used to fine-tune a lightweight pre-trained machine learning model, enabling the Autoscope to learn to identify more cell types in the future.
+The Autoscope zooms in on the specimen placed within it and captures a clear image, then either identifies the cell in the specimen or takes additional images to store in a dataset. This dataset is used to fine-tune a lightweight pre-trained machine learning model, enabling the Autoscope to learn to identify more cell types in the future. An example video of it working can be downloaded in this repository.
 
 The Autoscope is made up of a microscope, which is fitted with stepper motors and an Arducam Hawkeye camera. The stepper motors are connected to an Arduino Mega with Ramps 1.4, which receives instructions from a Raspberry Pi 5 to move the motors.
 
