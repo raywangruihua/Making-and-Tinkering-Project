@@ -4,10 +4,9 @@ The Autoscope zooms in on the specimen placed within it and captures a clear ima
 
 The Autoscope is made up of a microscope, which is fitted with stepper motors and an Arducam Hawkeye camera. The stepper motors are connected to an Arduino Mega with Ramps 1.4, which receives instructions from a Raspberry Pi 5 to move the motors.
 
-<figure text-align:center>
-  <img src="https://github.com/user-attachments/assets/cbe82beb-ff4f-4d17-aad4-15c488782f29" width="400"/>
-  <figcaption>Shown above is the Autoscope setup.</figcaption>
-</figure>
+Shown below is the Autoscope setup.
+</br>
+<img src="https://github.com/user-attachments/assets/cbe82beb-ff4f-4d17-aad4-15c488782f29" width="400"/>
 
 Close-up of the 2 controllers.
 </br>
