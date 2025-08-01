@@ -1,7 +1,7 @@
-A small machine learning project that was done as part of my Making and Tinkering module at NTU. This project consists of 2 parts: Data processing and Finetuning.
+As part of a summer-long multidisciplinary engineering project, my group and I designed and built an automatic microscope. We named it the Autoscope. 
 
-In data processing, sample images (Commonly brightfield microscopy images) are given to Cellpose-SAM, which identifies cells within the image and creates masks. The cells are then cropped out and saved into the training data directory.
+The Autoscope zooms in on the specimen placed within it and captures a clear image, then either identifies the cell in the specimen or takes additional images to store in a dataset. This dataset is used to fine-tune a lightweight pre-trained machine learning model, enabling the Autoscope to learn to identify more cell types in the future.
 
-In finetuning, I finetune the EfficientNetLite-B0 model on cell data. This model was chosen to be suitable for mobile devices, and I plan to run it on a Raspberry Pi.
+The Autoscope is made up of a microscope, which is fitted with stepper motors and an Arducam Hawkeye camera. The stepper motors are connected to an Arduino Mega with Ramps 1.4, which receives instructions from a Raspberry Pi 5 to move the motors.
 
-The final product is to be used in conjunction with a Raspberry Pi and Aruduino Mega + Ramps 1.4 controlling a microscopy via stepper motors attached to knobs. The goal is to automate the sample image taking process, as well as give some data processing functionality, while keeping costs low, so that school laboratories can make use of the deivce.
+The main code is stored on the Raspberry Pi; however, due to limitations in local computation capabilities, some code is executed on GoogleColab. This enables the use of GPUs, which accelerate many of the machine learning components in our project.
