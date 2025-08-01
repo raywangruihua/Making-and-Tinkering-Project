@@ -8,7 +8,6 @@
 
 // Motor steps per revolution. Most steppers are 200
 # define MOTOR_STEPS 200
-// 500 RPM seems to work well
 # define RPM 120
 
 // microstep mode
@@ -30,11 +29,10 @@
 # define L_EN 30
 
 // how much the motor should move for each step
-// each steps is 1/16 of a revolution
 const int x_steps = 100;
 const int y_steps = 100;
 const int z_steps = 80;
-const int l_steps = 2900;
+const int l_steps = 2900; // should be changed once new gears are printed
 const int accel = 1000;
 
 BasicStepperDriver x_stepper(MOTOR_STEPS, X_DIR, X_STEP, X_EN);
@@ -48,7 +46,7 @@ void setup() {
   x_stepper.begin(RPM, MICROSTEPS);
   x_stepper.setEnableActiveState(LOW);
   x_stepper.enable();
-  x_stepper.setSpeedProfile(z_stepper.LINEAR_SPEED, accel, accel);
+  x_stepper.setSpeedProfile(z_stepper.LINEAR_SPEED, accel, accel); // acceleration set at this amount due to issues with turning knobs at higher acceleration
 
 
   y_stepper.begin(RPM, MICROSTEPS);
