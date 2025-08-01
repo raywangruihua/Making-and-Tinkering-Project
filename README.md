@@ -1,3 +1,12 @@
+<style>
+  .center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+}
+</style>
+
 As part of a summer-long multidisciplinary engineering project, my group and I designed and built an automatic microscope. We named it the Autoscope. 
 
 The Autoscope zooms in on the specimen placed within it and captures a clear image, then either identifies the cell in the specimen or takes additional images to store in a dataset. This dataset is used to fine-tune a lightweight pre-trained machine learning model, enabling the Autoscope to learn to identify more cell types in the future.
@@ -6,10 +15,13 @@ The Autoscope is made up of a microscope, which is fitted with stepper motors an
 
 Shown below is the Autoscope setup.
 </br>
-<img src="https://github.com/user-attachments/assets/cbe82beb-ff4f-4d17-aad4-15c488782f29" width="400"/>
+<div class="center">
+  <img src="https://github.com/user-attachments/assets/cbe82beb-ff4f-4d17-aad4-15c488782f29" width="400"/>
+</div>
 
 Close-up of the 2 controllers.
-</br>
-<img src="https://github.com/user-attachments/assets/b3e0eb6c-d14f-4887-a5f2-2a92b9e2d1aa" width="400"/>
+<div class="center">
+  <img src="https://github.com/user-attachments/assets/b3e0eb6c-d14f-4887-a5f2-2a92b9e2d1aa" width="400"/>
+</div>
 
 The main code is stored on the Raspberry Pi; however, due to limitations in local computation capabilities, some code is executed on GoogleColab. This enables the use of GPUs, which accelerate many of the machine learning components in our project.
