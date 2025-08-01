@@ -6,9 +6,7 @@ The Autoscope is made up of a microscope, which is fitted with stepper motors an
 
 <figure>
   <img src="https://github.com/user-attachments/assets/cbe82beb-ff4f-4d17-aad4-15c488782f29" width="400"/>
-  <figcaption>
-    Shown above is the Autoscope setup.
-  </figcaption>
+  <figcaption>Shown above is the Autoscope setup.</figcaption>
 </figure>
 
 Close-up of the 2 controllers.
