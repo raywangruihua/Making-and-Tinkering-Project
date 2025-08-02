@@ -18,4 +18,6 @@ Close-up of the 2 controllers.
 
 The main code is stored on the Raspberry Pi; however, due to limitations in local computation capabilities, some code is executed on Google Colab. This enables the use of GPUs, which accelerate many of the machine learning components in our project. The 2 additional code blocks are named cell-counter and cell-identifier.
 
-The Raspberry Pi 5 main code will not work without some extra steps and writing in the input/output folder IDs of the folders in the Google Drive where the images sent from the Autoscope will be stored. Google Drive authentication is done by enabling Drive API on Google Cloud Console and downloading the client secrets JSON which must be placed in the same folder as the main code file.
+The Raspberry Pi 5 main code will not work without some extra steps and writing in the input/output folder IDs of the folders in the Google Drive where the images sent from the Autoscope will be stored. Google Drive authentication is enabled by enabling the Drive API on the Google Cloud Console and downloading the client secrets JSON file, which must be placed in the same folder as the main code file.
+
+Future features to be added can be a GUI interface and packaging the code into an .exe file.
