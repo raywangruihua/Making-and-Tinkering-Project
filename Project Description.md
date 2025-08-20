@@ -1,4 +1,4 @@
-#Introduction
+# Introduction
 As part of a summer-long multidisciplinary project, my group and I designed and built an automatic microscope. We named it the Autoscope. 
 
 The Autoscope is made up of several components: A microscope, Raspberry Pi 5, Arduino Mega with Ramps 1.4, stepper motors, Arducam Hawkeye camera, and 3D printed parts to integrate the parts together.
@@ -15,7 +15,7 @@ Close-up of the Raspberry Pi and Arduino.
   <img src="https://github.com/user-attachments/assets/b3e0eb6c-d14f-4887-a5f2-2a92b9e2d1aa" width="400"/>
 </p>
 
-#Working Principle
+# Working Principle
 The Autoscope works as follows:
 1. Place a sample under the microscope, ensure that some part of the sample can be seen under the microscope.
 2. Execute the main python file on the Raspberry Pi through a keyboard, mouse and monitor setup.
@@ -32,7 +32,7 @@ The Autoscope works as follows:
 
 The physical operation of the Autoscope can be seen in the video in this repository.
 
-#Comments
+# Comments
 The cell_counter and cell_identifier is run on GoogleColab due to limitations in computing power of the Raspberry Pi 5. Additionally, GoogleColab also provides the use of GPUs which accelerate the run time of both scripts.
 
 Future features to be added can be a GUI interface and packaging the code into an .exe file.
