@@ -23,10 +23,10 @@ The Autoscope works as follows:
 4. Wait for the Autoscope to focus and scan the sample.
 5. Authenticate your Google account.
 6. Run the cell_counter script on GoogleColab and enter "done" into the Raspberry Pi when finished.
-7. Wait for the Autoscope to reach the maximum zoom objective lens and focus on the sample.
+7. Wait for the Autoscope to reach the maximum zoom objective lens and focus on the sample.</br>
    A final image will be shown when the Autoscope is finished.
-8. Choose whether to take a final picture of the sample and upload the image for cell identification through cell_identifier.
-   OR
+8. Choose whether to take a final picture of the sample and upload the image for cell identification through cell_identifier.</br>
+   OR</br>
    Enter data collection mode where the Autoscope will take a large number of images.
 9. When data collection is completed, run the model finetuner in the cell_identifier to train the model to recognise the new cell type.
 
