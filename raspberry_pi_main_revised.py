@@ -99,15 +99,18 @@ class Camera():
             print("Camera not initialised.")
 
     def set_exposure(self, zoom):
-        if zoom == "4x":
-            self.__device.set_controls(X4_EXPOSURE_TIME)
-        elif zoom == "10x":
-            self.__device.set_controls(X10_EXPOSURE_TIME)
+        if self.check_intialisation:
+            if zoom == "4x":
+                self.__device.set_controls(X4_EXPOSURE_TIME)
+            elif zoom == "10x":
+                self.__device.set_controls(X10_EXPOSURE_TIME)
+            else:
+                self.__device.set_controls(X40_EXPOSURE_TIME)
+            
+            print("Setting Exposure.")
+            time.sleep(10)
         else:
-            self.__device.set_controls(X40_EXPOSURE_TIME)
-        
-        print("Setting Exposure.")
-        time.sleep(10)
+            print("Camera not initialised.")
 
 class Autoscope():
     def __init__(self):
@@ -117,9 +120,15 @@ class Autoscope():
         self.__x_position = 0
         self.__y_position = 0
         self.__z_position = 0
-        self.__median_area = 0
-        # whether or not we have zoomed and focused to the max
-        self.__status = False
+        self.__median_area = 5 # take center of sample as default
+        self.__status = False # True when Autoscope has reached max zoom on sample
+
+    # getter functions
+    def get_arduino(self):
+        return self.__arduino
+    
+    def get_camera(self):
+        return self.__camera
 
     def get_current_zoom(self):
         return self.__current_zoom
@@ -132,19 +141,45 @@ class Autoscope():
     
     def get_z_position(self):
         return self.__z_position
-    
+
+    def get_median_area(self):
+        return self.__median_area
+
+    def get_status(self):
+        return self.__status
+
+    # setter functions
     def set_current_zoom(self, zoom):
         self.__current_zoom = zoom
 
-    def set_x_position(self, x):
-        self.__x_position = x
+    def increment_x(self):
+        self.__x_position += 1
 
-    def set_y_position(self, y):
-        self.__y_position = y
+    def increment_y(self):
+        self.__y_position += 1
 
-    def set_z_position(self, z):
-        self.__z_position = z
+    def increment_z(self):
+        self.__z_position += 1
 
+    def decrement_x(self):
+        self.__x_position -= 1
+
+    def decrement_y(self):
+        self.__y_position -= 1
+
+    def decrement_z(self):
+        self.__z_position -= 1
+
+    def set_median_area(self, median):
+        self.__median_area = median
+
+    def set_status(self, status):
+        self.__status = status
+
+    def set_exposure_time(self):
+        self.get_camera().set_exposure(self.get_current_zoom())
+
+    # constructor functions
     def initialise(self, arduino_port):
         self.initialise_arduino(arduino_port)
         self.initalise_camera()
@@ -156,11 +191,12 @@ class Autoscope():
             pass
 
     def initialise_arduino(self, port):
-        self.__arduino.initialise(port)
+        self.get_arduino().initialise(port)
 
     def initalise_camera(self):
-        self.__camera.initalise()
+        self.get_camera().initalise()
 
+    # autoscope camera functions
     def start_camera(self):
         self.__camera.start()
 
@@ -169,9 +205,6 @@ class Autoscope():
 
     def stop_camera(self):
         self.__camera.stop()
-
-    def set_exposure_time(self):
-        self.__camera.set_exposure(self.get_current_zoom())
 
     # Tenengrad method
     def calculate_sharpness(self):
@@ -184,6 +217,7 @@ class Autoscope():
         
         return np.sum(grad_sq)
     
+    # autoscope arduino (motor) functions
     def move_x(self, steps, direction):
         self.__arduino.move_x(steps, direction)
 
@@ -321,9 +355,12 @@ def main():
 
 def query_starting_zoom():
     starting_zoom = ""
-    valid_zoom = ["4x", "10x"]
+    valid_zoom_start = ["4x", "10x"]
 
-    while not(starting_zoom in valid_zoom):
+    while not(starting_zoom in valid_zoom_start):
         starting_zoom = input("Enter starting zoom level (4x, 10x): ")
     
     return starting_zoom
+
+if __name__ == "__main__":
+    main()
