@@ -419,16 +419,18 @@ def main():
 
     starting_zoom = query_starting_zoom()
     autoscope.set_exposure(starting_zoom)
+    # some tweaking may be required for top and bottom limits of platform
     autoscope.focus()
     autoscope.identify_median_area()
     autoscope.move_median_area()
+    # some tweaking might be required for transitioning from 10x zoom to 40x zoom
     autoscope.next_lens()
     choose(autoscope)
 
 def query_starting_zoom():
     starting_zoom = ""
     valid_zoom_start = ["4x", "10x"]
-    
+
     while not(starting_zoom in valid_zoom_start):
         starting_zoom = input("Enter starting zoom level (4x, 10x): ")
     
