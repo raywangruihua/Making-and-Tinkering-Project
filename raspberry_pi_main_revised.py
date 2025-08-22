@@ -1,8 +1,9 @@
-import serial, time, os, cv2
+import serial, time, os, cv2, sys
 import numpy as np
 from picamera2 import Picamera2
 from libcamera import controls
 from tqdm import tqdm
+from pynput import keyboard
 from pyrdrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
@@ -31,14 +32,22 @@ class Arduino():
         self.__initialised = False
 
     def initialise_arduino(self, port):
+        if self.check_initialisation():
+            sys.exit("Arduino already connected, please disconnect Arduino first before making new connection.")
+
         self.__device = serial.Serial(port, 9600, timeout=1)
         self.__device.reset_input_buffer()
         self.__initialised = True
+        print("Arduino connected.")
 
     def deinitialise_arduino(self):
+        if self.check_initialisation():
+            sys.exit("Arduino not connected, unable to disconnect.")
+
         self.__device.close()
         self.__device = None
         self.__initialised = False
+        print("Arduino disconnected.")
     
     def check_initialisation(self):
         return self.__initialised
@@ -46,6 +55,9 @@ class Arduino():
     # send instruction to Arduino to make it move a specific motor in a certain direction
     # finetuning should be done in this step with time.sleep() to significantly speed up the Autoscope
     def send(self, motor, direction):
+        if self.check_initialisation():
+            sys.exit("Arduino not connected, unable to move motors.")
+
         response = "Not done"
         while response != "Done":
             instruction = f"{motor} {direction}\n"
@@ -55,32 +67,20 @@ class Arduino():
 
     # move motors by chosen steps in chosen direction
     def move_x(self, steps, direction):
-        if self.check_initialisation:
-            for _ in range(steps):
-                self.send("x", direction)
-        else:
-            print("Arduino not initialised.")
+        for _ in range(steps):
+            self.send("x", direction)
 
     def move_y(self, steps, direction):
-        if self.check_initialisation:
-            for _ in range(steps):
-                self.send("y", direction)
-        else:
-            print("Arduino not initialised.")
+        for _ in range(steps):
+            self.send("y", direction)
 
     def move_z(self, steps, direction):
-        if self.check_initialisation:
-            for _ in range(steps):
-                self.send("z", direction)
-        else:
-            print("Arduino not initialised.")
+        for _ in range(steps):
+            self.send("z", direction)
 
     def move_lens(self, steps, direction):
-        if self.check_initialisation:
-            for _ in range(steps):
-                self.send("l", direction)
-        else:
-            print("Arduino not initialised.")
+        for _ in range(steps):
+            self.send("l", direction)
 
 class Camera():
     def __init__(self):
@@ -89,8 +89,11 @@ class Camera():
         self.__start = False
 
     def initialise_camera(self):
-        self.__device = Picamera2()
+        if self.check_intialisation():
+            sys.exit("Camera already initialised.")
 
+        self.__device = Picamera2()
+        
         configuration = self.__device.create_still_configuration(
             buffer_count = 1,
             main = {"size": (1280, 970)}
@@ -105,8 +108,12 @@ class Camera():
             "LensPosition": 2.0
         })
         self.__initialised = True
+        print("Camera initialised.")
 
     def deinitialise_camera(self):
+        if self.check_intialisation():
+            sys.exit("Camera not initialised, unable to deinitialise.")
+
         if self.check_start():
             self.stop()
         self.__device = None
@@ -116,40 +123,51 @@ class Camera():
         return self.__initialised
 
     def start(self):
-        if self.check_intialisation:
-            self.__device.start()
-            self.__start = True
-        else:
-            print("Camera not initialised.")
+        if not self.check_intialisation:
+            sys.exit("Camera not initialised, unable to start.")
+
+        self.__device.start()
+        self.__start = True
+        print("Camera started.")
 
     def check_start(self):
         return self.__start
 
     def capture(self, filepath):
-        if self.check_start():
-            self.__device.capture_file(filepath)
-        else:
-            print("Camera not started.")
+        if not self.check_start():
+            sys.exit("Camera not started, unable to capture images.")
+
+        if os.path.exists(filepath):
+            query = ""
+            while not(query in ["Y", "N"]):
+                query = input("Image with same name already exists, override? (Y\N): ")
+                if query == "Y":
+                    break
+                else:
+                    return
+                
+        self.__device.capture_file(filepath)
 
     def stop(self):
         if self.check_start():
-            self.__device.stop()
-        else:
-            print("Camera not started.")
+            sys.exit("Camera not started, unable to stop.")
+
+        self.__device.stop()
 
     def set_exposure(self, zoom):
-        if self.check_intialisation:
-            if zoom == "4x":
-                self.__device.set_controls({"ExposureTime": X4_EXPOSURE_TIME})
-            elif zoom == "10x":
-                self.__device.set_controls({"ExposureTime": X10_EXPOSURE_TIME})
-            else:
-                self.__device.set_controls({"ExposureTime": X40_EXPOSURE_TIME})
-            
-            print("Setting Exposure.")
-            time.sleep(10)
+        if not self.check_intialisation:
+            sys.exit("Camera not initialised.")
+
+        if zoom == "4x":
+            self.__device.set_controls({"ExposureTime": X4_EXPOSURE_TIME})
+        elif zoom == "10x":
+            self.__device.set_controls({"ExposureTime": X10_EXPOSURE_TIME})
         else:
-            print("Camera not initialised.")
+            self.__device.set_controls({"ExposureTime": X40_EXPOSURE_TIME})
+        
+        print("Setting Exposure.")
+        time.sleep(10)
+        print(f"Exposure set for {zoom} zoom.")
 
 class Autoscope(Arduino, Camera):
     def __init__(self):
@@ -171,6 +189,16 @@ class Autoscope(Arduino, Camera):
             pass
 
         self.__initialisation = True
+        print("Autoscope started.")
+
+    def deinitialise(self):
+        self.deinitialise_arduino()
+        self.deinitialise_camera()
+        self.__initialisation = False
+        print("Autoscope shutting down.")
+
+    def start_camera(self):
+        self.start()
 
     def check_initialisation(self):
         return self.__initialisation
@@ -218,13 +246,18 @@ class Autoscope(Arduino, Camera):
         return self.__median_area
 
     def focus(self):
+        if self.get_current_zoom == "":
+            sys.exit("Current zoom not set.")
+
         if self.get_current_zoom in ["4x", "10x"]:
             self.focus_4x_10x()
-        else:
+        elif self.get_current_zoom == "40x":
             self.focus_40x()
+        else:
+            sys.exit("Unrecognised zoom level.")
 
     def focus_4x_10x(self):
-        self.start()
+        self.start_camera()
         self.capture(FOCUS_PATH)
         current_sharpness = self.calculate_sharpness()
         best = [self.get_z_position, current_sharpness]
@@ -245,7 +278,7 @@ class Autoscope(Arduino, Camera):
         self.stop()
 
     def focus_40x(self):
-        self.start()
+        self.start_camera()
         self.capture(FOCUS_PATH)
         current_sharpness = self.calculate_sharpness()
         best = [self.get_z_position, current_sharpness]
@@ -284,7 +317,7 @@ class Autoscope(Arduino, Camera):
         self.set_median_area = median
 
     def take_picture_of_sample(self):
-        self.start()
+        self.start_camera()
         self.capture(SQUARE_GRID_PICTURES_PATHS[5])
 
         self.smart_move_x(16, "+")
@@ -343,8 +376,8 @@ class Autoscope(Arduino, Camera):
             for f in output_folder:
                 f.Delete()
             print("Previous temporary drive data deleted.")
-        except Exception as e:
-            print(f"Error deleting temporary drive data: {e}.")
+        except Exception:
+            print(f"Error deleting temporary drive data. Continuing")
                 
         for f in tqdm(SQUARE_GRID_PICTURES_PATHS[1:10], desc="Uploading files"):
             metadata = {
@@ -407,10 +440,43 @@ class Autoscope(Arduino, Camera):
             self.move_lens(1, "-")
             self.set_current_zoom = "40x"
             self.focus_40x()
-        else:
+        elif self.get_current_zoom == "40x":
             self.move_lens(1, "-")
             self.set_current_zoom = "10x"
             print("Please load next sample.")
+        else:
+            sys.exit("Unrecognised zoom level.")
+
+    def collect_data(self):
+        folder_name = input("Input cell/folder name to store images: ")
+        number = 1
+        folder_path = os.path.join(DATA_FOLDER_PATH, folder_name)
+        self.capture(os.path.join(folder_path, f"{number}.jpg"))
+
+        for i in range(5):
+            if i % 2 == 0:
+                for _ in range(1 + i):
+                    self.smart_move_y(1, "-")
+                    number += 1
+                    self.capture(os.path.join(folder_path, f"{number}.jpg"))
+                for _ in range(1 + i):
+                    self.smart_move_x(1, "-")
+                    number += 1
+                    self.capture(os.path.join(folder_path, f"{number}.jpg"))
+            else:
+                for _ in range(1 + i):
+                    self.smart_move_y(1, "+")
+                    number += 1
+                    self.capture(os.path.join(folder_path, f"{number}.jpg"))
+                for _ in range(1 + i):
+                    self.smart_move_x(1, "+")
+                    number += 1
+                    self.capture(os.path.join(folder_path, f"{number}.jpg"))
+
+        print(f"Data collection complete: {number} images collected.")
+
+    def manual(self):
+        print("Use WASD controls to move Autoscope. Press Esc to exit manual mode.")
 
 def main():
     autoscope = Autoscope()
@@ -427,28 +493,34 @@ def main():
     autoscope.next_lens()
     choose(autoscope)
 
+    autoscope.deinitialise()
+
 def query_starting_zoom():
     starting_zoom = ""
     valid_zoom_start = ["4x", "10x"]
-
     while not(starting_zoom in valid_zoom_start):
         starting_zoom = input("Enter starting zoom level (4x, 10x): ")
-    
     return starting_zoom
 
 def choose(autoscope):
     while True:
-        response = input("Type 1 to save an image for identification, type 2 to collect image data: ")
-        try:
-            response = int(response)
-            if response == 1:
-                autoscope.capture("data/cell_image.jpg")
-                break
-            elif response == 2:
+        response = int(input("Type 1 to save an image for identification." \
+                         "Type 2 to collect image data."
+                         "Type 3 to take manual control of Autoscope."
+                         "Type 4 to shutdown Autoscope."))
+        
+        match response:
+            case 1:
+                filename = input("Enter name for image: ")
+                autoscope.capture(os.path.join(DATA_FOLDER_PATH, filename))
+            case 2: 
                 autoscope.collect_data()
-                break
-        except ValueError:
-            print("Invalid input, please input a number (1 or 2).")
+            case 3: 
+                autoscope.manual()
+            case 4:
+                return
+            case _:
+                print("Invalid input, please input a number (1 to 3)")
 
 if __name__ == "__main__":
     main()
