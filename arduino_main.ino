@@ -1,16 +1,8 @@
 # include <Arduino.h>
 # include "BasicStepperDriver.h"
 
-// The purpose of the arduino is to:
-// 1. Receive instructions from raspberry pi
-// 2. Execute instructions (move stepper motors)
-// 3. Notify raspberry pi when it is done
-
-// Motor steps per revolution. Most steppers are 200
 # define MOTOR_STEPS 200
 # define RPM 120
-
-// microstep mode
 # define MICROSTEPS 16
 
 // RAMPS 1.4 to Arduino Mega
@@ -108,11 +100,8 @@ void move_motor(String instruction) {
 }
 
 void loop() {
-  // wait for raspberry pi to send instruction
   if (Serial.available() > 0) {
-    // read instruction
     String instruction = Serial.readStringUntil('\n');
-    // execute instruction
     move_motor(instruction);
   }
 }
