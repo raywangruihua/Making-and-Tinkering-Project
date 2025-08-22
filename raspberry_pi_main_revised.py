@@ -476,7 +476,40 @@ class Autoscope(Arduino, Camera):
         print(f"Data collection complete: {number} images collected.")
 
     def manual(self):
-        print("Use WASD controls to move Autoscope. Press Esc to exit manual mode.")
+        print("Use WASD controls to move Autoscope." \
+            "Press E to take a picture."
+            "Press F to focus."
+            "Press Esc to exit manual mode.")
+
+        listener = keyboard.Listener(
+            on_press=self.on_key_press,
+            on_release=self.on_key_release
+        )
+        listener.start()
+
+    def on_key_press(self, key):
+        key_char = key.char
+        if key_char == "W":
+            self.smart_move_y(1, "-")
+            time.sleep(1)
+        elif key_char == "S":
+            self.smart_move_y(1, "+")
+            time.sleep(1)
+        elif key_char == "A":
+            self.smart_move_x(1, "+")
+            time.sleep(1)
+        elif key_char == "D":
+            self.smart_move_x(1, "-")
+            time.sleep(1)
+        elif key_char == "E":
+            filename = input("Enter name for image: ")
+            self.capture(os.path.join(DATA_FOLDER_PATH, filename))
+        elif key_char == "F":
+            self.focus()
+        
+    def on_key_release(self, key):
+        if key == keyboard.Key.esc:
+            return False
 
 def main():
     autoscope = Autoscope()
@@ -505,9 +538,9 @@ def query_starting_zoom():
 def choose(autoscope):
     while True:
         response = int(input("Type 1 to save an image for identification." \
-                         "Type 2 to collect image data."
-                         "Type 3 to take manual control of Autoscope."
-                         "Type 4 to shutdown Autoscope."))
+                        "Type 2 to collect image data."
+                        "Type 3 to take manual control of Autoscope."
+                        "Type 4 to shutdown Autoscope."))
         
         match response:
             case 1:
