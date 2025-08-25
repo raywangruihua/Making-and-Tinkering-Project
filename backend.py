@@ -7,7 +7,6 @@ from pynput import keyboard
 from pyrdrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
-
 # tweak constants here to suit Autoscope and environment (exposure)
 # input drive folder ids before running count_cells method in Autoscope
 X4_EXPOSURE_TIME = 100_000
@@ -31,7 +30,8 @@ class Arduino():
         self.__device = None
         self.__initialised = False
 
-    def initialise_arduino(self, port):
+    # we used "/dev/ttyUSB0" as our default port for our set up
+    def initialise_arduino(self, port="/dev/ttyUSB0"):
         if self.check_initialisation():
             sys.exit("Arduino already connected, please disconnect Arduino first before making new connection.")
 
@@ -181,13 +181,11 @@ class Autoscope(Arduino, Camera):
     def initialise(self, arduino_port):
         self.initialise_arduino(arduino_port)
         self.initialise_camera()
-
         try:
             os.mkdir(TEMP_FOLDER_PATH)
             os.mkdir(DATA_FOLDER_PATH)
-        except FileExistsError:
-            pass
-
+        except FileExistsError: pass
+        
         self.__initialisation = True
         print("Autoscope started.")
 
@@ -510,50 +508,3 @@ class Autoscope(Arduino, Camera):
     def on_key_release(self, key):
         if key == keyboard.Key.esc:
             return False
-
-def main():
-    autoscope = Autoscope()
-    arduino_port = "/dev/ttyUSB0"
-    autoscope.initialise(arduino_port)
-
-    starting_zoom = query_starting_zoom()
-    autoscope.set_exposure(starting_zoom)
-    # some tweaking may be required for top and bottom limits of platform
-    autoscope.focus()
-    autoscope.identify_median_area()
-    autoscope.move_median_area()
-    # some tweaking might be required for transitioning from 10x zoom to 40x zoom
-    autoscope.next_lens()
-    choose(autoscope)
-
-    autoscope.deinitialise()
-
-def query_starting_zoom():
-    starting_zoom = ""
-    valid_zoom_start = ["4x", "10x"]
-    while not(starting_zoom in valid_zoom_start):
-        starting_zoom = input("Enter starting zoom level (4x, 10x): ")
-    return starting_zoom
-
-def choose(autoscope):
-    while True:
-        response = int(input("Type 1 to save an image for identification." \
-                        "Type 2 to collect image data."
-                        "Type 3 to take manual control of Autoscope."
-                        "Type 4 to shutdown Autoscope."))
-        
-        match response:
-            case 1:
-                filename = input("Enter name for image: ")
-                autoscope.capture(os.path.join(DATA_FOLDER_PATH, filename))
-            case 2: 
-                autoscope.collect_data()
-            case 3: 
-                autoscope.manual()
-            case 4:
-                return
-            case _:
-                print("Invalid input, please input a number (1 to 3)")
-
-if __name__ == "__main__":
-    main()
