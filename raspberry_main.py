@@ -37,7 +37,7 @@ def query_starting_zoom():
 
 def choose(autoscope):
     while True:
-        response = int(input("Type 1 to save an image for identification." \
+        response = int(input("Type 1 to save an image for identification." 
                         "Type 2 to collect image data."
                         "Type 3 to take manual control of Autoscope."
                         "Type 4 to shutdown Autoscope."))
