@@ -3,7 +3,6 @@ import numpy as np
 from picamera2 import Picamera2
 from libcamera import controls
 from tqdm import tqdm
-from pynput import keyboard
 from pyrdrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
 
@@ -472,39 +471,3 @@ class Autoscope(Arduino, Camera):
                     self.capture(os.path.join(folder_path, f"{number}.jpg"))
 
         print(f"Data collection complete: {number} images collected.")
-
-    def manual(self):
-        print("Use WASD controls to move Autoscope." \
-            "Press E to take a picture."
-            "Press F to focus."
-            "Press Esc to exit manual mode.")
-
-        listener = keyboard.Listener(
-            on_press=self.on_key_press,
-            on_release=self.on_key_release
-        )
-        listener.start()
-
-    def on_key_press(self, key):
-        key_char = key.char
-        if key_char == "W":
-            self.smart_move_y(1, "-")
-            time.sleep(1)
-        elif key_char == "S":
-            self.smart_move_y(1, "+")
-            time.sleep(1)
-        elif key_char == "A":
-            self.smart_move_x(1, "+")
-            time.sleep(1)
-        elif key_char == "D":
-            self.smart_move_x(1, "-")
-            time.sleep(1)
-        elif key_char == "E":
-            filename = input("Enter name for image: ")
-            self.capture(os.path.join(DATA_FOLDER_PATH, filename))
-        elif key_char == "F":
-            self.focus()
-        
-    def on_key_release(self, key):
-        if key == keyboard.Key.esc:
-            return False
