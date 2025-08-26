@@ -3,179 +3,154 @@ import numpy as np
 from picamera2 import Picamera2
 from libcamera import controls
 from tqdm import tqdm
-from pyrdrive2.auth import GoogleAuth
+from pydrive2.auth import GoogleAuth
 from pydrive2.drive import GoogleDrive
+
 
 # tweak constants here to suit Autoscope and environment (exposure)
 # input drive folder ids before running count_cells method in Autoscope
-X4_EXPOSURE_TIME = 100_000
+X4_EXPOSURE_TIME  = 100_000
 X10_EXPOSURE_TIME = 500_000
 X40_EXPOSURE_TIME = 3_000_000
-TOP_LIMIT = 35
-BOTTOM_LIMIT = 50
-TEMP_FOLDER_PATH = "./TEMP"
-DATA_FOLDER_PATH = "./DATA"
-FOCUS_PATH = "./TEMP/FOCUS.jpg"
+TOP_LIMIT         = 35
+BOTTOM_LIMIT      = 50
+TEMP_FOLDER_PATH  = "./TEMP"
+DATA_FOLDER_PATH  = "./DATA"
+FOCUS_PATH        = "./TEMP/FOCUS.jpg"
 SQUARE_GRID_PICTURES_PATHS = ["",
                               "./TEMP/1.jpg", "./TEMP/2.jpg", "./TEMP/3.jpg", 
                               "./TEMP/4.jpg", "./TEMP/5.jpg", "./TEMP/6.jpg", 
                               "./TEMP/7.jpg", "./TEMP/8.jpg", "./TEMP/9.jpg",]
-DRIVE_INPUT_FOLDER_ID = ""
-DRIVE_OUTPUT_FOLDER_ID = ""
+DRIVE_INPUT_FOLDER_ID  = "1d2YUfW8d4tL57rssurazZXXzqD_GaEK8"
+DRIVE_OUTPUT_FOLDER_ID = "1YPrlwGlUEjJe-BMzjESk201zpbyNCwLQ"
+
 
 # the purpose of the Arduino is to control the stepper motors
 class Arduino():
     def __init__(self):
-        self.__device = None
-        self.__initialised = False
+        self.arduino_device = None
+        self.arduino_initialised = False
 
     # we used "/dev/ttyUSB0" as our default port for our set up
     def initialise_arduino(self, port="/dev/ttyUSB0"):
-        if self.check_initialisation():
-            sys.exit("Arduino already connected, please disconnect Arduino first before making new connection.")
+        if self.arduino_initialised: 
+	        sys.exit("Arduino already connected, please disconnect Arduino first before making new connection.")
 
-        self.__device = serial.Serial(port, 9600, timeout=1)
-        self.__device.reset_input_buffer()
-        self.__initialised = True
+        self.arduino_device = serial.Serial(port, 9600, timeout=1)
+        self.arduino_device.reset_input_buffer()
+        # add hand shake here to ensure arduino is connected
+        self.arduino_initialised = True
         print("Arduino connected.")
 
     def deinitialise_arduino(self):
-        if self.check_initialisation():
+        if not self.arduino_initialised: 
             sys.exit("Arduino not connected, unable to disconnect.")
 
-        self.__device.close()
-        self.__device = None
-        self.__initialised = False
+        self.arduino_device.close()
+        self.arduino_device = None
+        self.arduino_initialised = False
         print("Arduino disconnected.")
-    
-    def check_initialisation(self):
-        return self.__initialised
 
     # send instruction to Arduino to make it move a specific motor in a certain direction
     # finetuning should be done in this step with time.sleep() to significantly speed up the Autoscope
     def send(self, motor, direction):
-        if self.check_initialisation():
+        if not self.arduino_initialised: 
             sys.exit("Arduino not connected, unable to move motors.")
 
         response = "Not done"
         while response != "Done":
             instruction = f"{motor} {direction}\n"
-            self.__device.write(instruction.encode("utf-8"))
+            self.arduino_device.write(instruction.encode("utf-8"))
             time.sleep(1)
-            response = self.__device.readline().decode("utf-8").rstrip()
+            response = self.arduino_device.readline().decode("utf-8").rstrip()
 
     # move motors by chosen steps in chosen direction
     def move_x(self, steps, direction):
-        for _ in range(steps):
-            self.send("x", direction)
+        for _ in range(steps): self.send("x", direction)
 
     def move_y(self, steps, direction):
-        for _ in range(steps):
-            self.send("y", direction)
+        for _ in range(steps): self.send("y", direction)
 
     def move_z(self, steps, direction):
-        for _ in range(steps):
-            self.send("z", direction)
+        for _ in range(steps): self.send("z", direction)
 
     def move_lens(self, steps, direction):
-        for _ in range(steps):
-            self.send("l", direction)
+        for _ in range(steps): self.send("l", direction)
+
 
 class Camera():
     def __init__(self):
-        self.__device = None
-        self.__initialised = False
-        self.__start = False
+        self.camea_device = None
+        self.camera_initialised = False
+        self.camera_start = False
 
     def initialise_camera(self):
-        if self.check_intialisation():
+        if self.camera_initialised: 
             sys.exit("Camera already initialised.")
 
-        self.__device = Picamera2()
+        self.camera_device = Picamera2()
         
-        configuration = self.__device.create_still_configuration(
+        configuration = self.camera_device.create_still_configuration(
             buffer_count = 1,
             main = {"size": (1280, 970)}
         )
-        self.__device.configure(configuration)
+        self.camera_device.configure(configuration)
 
-        self.__device.set_controls({
-            "AeEnable": False,
+        self.camera_device.set_controls({
+            "AeEnable"    : False,
             "ExposureTime": X4_EXPOSURE_TIME,
             "AnalogueGain": 1.0,
-            "AfMode": controls.AfModeEnum.Manual,
+            "AfMode"      : controls.AfModeEnum.Manual,
             "LensPosition": 2.0
         })
-        self.__initialised = True
+        self.camera_initialised = True
         print("Camera initialised.")
 
     def deinitialise_camera(self):
-        if self.check_intialisation():
+        if not self.camera_initialised: 
             sys.exit("Camera not initialised, unable to deinitialise.")
 
-        if self.check_start():
-            self.stop()
-        self.__device = None
-        self.__initialised = False
+        if self.camera_start: self.stop_camera()
+        self.camera_device = None
+        self.camera_initialised = False
 
-    def check_intialisation(self):
-        return self.__initialised
-
-    def start(self):
-        if not self.check_intialisation:
+    def start_camera(self):
+        if not self.camera_initialised: 
             sys.exit("Camera not initialised, unable to start.")
 
-        self.__device.start()
-        self.__start = True
+        self.camera_device.start()
+        self.camera_start = True
         print("Camera started.")
 
-    def check_start(self):
-        return self.__start
-
     def capture(self, filepath):
-        if not self.check_start():
+        if not self.camera_start: 
             sys.exit("Camera not started, unable to capture images.")
 
         if os.path.exists(filepath):
             query = ""
             while not(query in ["Y", "N"]):
                 query = input("Image with same name already exists, override? (Y/N): ")
-                if query == "Y":
-                    break
-                else:
-                    return
-                
-        self.__device.capture_file(filepath)
+                if query == "Y": break 
+                else: return
+        self.camera_device.capture_file(filepath)
 
-    def stop(self):
-        if self.check_start():
+    def stop_camera(self):
+        if not self.camera_start: 
             sys.exit("Camera not started, unable to stop.")
+        self.camera_device.stop()
+        print("Camera stopped")
 
-        self.__device.stop()
-
-    def set_exposure(self, zoom):
-        if not self.check_intialisation:
-            sys.exit("Camera not initialised.")
-
-        if zoom == "4x":
-            self.__device.set_controls({"ExposureTime": X4_EXPOSURE_TIME})
-        elif zoom == "10x":
-            self.__device.set_controls({"ExposureTime": X10_EXPOSURE_TIME})
-        else:
-            self.__device.set_controls({"ExposureTime": X40_EXPOSURE_TIME})
-        
-        print("Setting Exposure.")
-        time.sleep(10)
-        print(f"Exposure set for {zoom} zoom.")
 
 class Autoscope(Arduino, Camera):
     def __init__(self):
-        self.__initialisation = False
-        self.__current_zoom = ""
-        self.__x_position = 0
-        self.__y_position = 0
-        self.__z_position = 0
-        self.__median_area = 5 # take center of sample as default
+        Arduino.__init__(self)
+        Camera.__init__(self)
+        self.initialisation = False
+        self.current_zoom = ""
+        self.x_position = 0
+        self.y_position = 0
+        self.z_position = 0
+        self.median_area = 5 # take center of sample as default
 
     def initialise(self, arduino_port):
         self.initialise_arduino(arduino_port)
@@ -185,115 +160,117 @@ class Autoscope(Arduino, Camera):
             os.mkdir(DATA_FOLDER_PATH)
         except FileExistsError: pass
         
-        self.__initialisation = True
+        self.initialisation = True
         print("Autoscope started.")
 
     def deinitialise(self):
         self.deinitialise_arduino()
         self.deinitialise_camera()
-        self.__initialisation = False
+        self.initialisation = False
         print("Autoscope shutting down.")
-
-    def start_camera(self):
-        self.start()
-
-    def check_initialisation(self):
-        return self.__initialisation
-
-    def set_current_zoom(self, zoom):
-        self.__current_zoom = zoom
-
-    def get_current_zoom(self):
-        return self.__current_zoom
-    
-    def get_x_position(self):
-        return self.__x_position
-    
-    def get_y_position(self):
-        return self.__y_position
-    
-    def get_z_position(self):
-        return self.__z_position
 
     def smart_move_x(self, steps, direction):
         self.move_x(steps, direction)
         if direction == "+":
-            self.__x_position += steps
+            self.x_position += steps
         else:
-            self.__x_position -= steps
+            self.x_position -= steps
 
     def smart_move_y(self, steps, direction):
         self.move_y(steps, direction)
         if direction == "+":
-            self.__y_position += steps
+            self.y_position += steps
         else:
-            self.__y_position -= steps
+            self.y_position -= steps
 
     def smart_move_z(self, steps, direction):
         self.move_z(steps, direction)
         if direction == "+":
-            self.__z_position += steps
+            self.z_position += steps
         else:
-            self.__z_position -= steps
+            self.z_position -= steps
+    
+    def set_current_zoom(self, zoom):
+        self.current_zoom = zoom
+    
+    def set_exposure(self):
+        if not self.camera_initialised: 
+            sys.exit("Camera not initialised.")
 
-    def set_median_area(self, median):
-        self.__median_area = median
-
-    def get_median_area(self):
-        return self.__median_area
+        if self.current_zoom == "4x":
+            self.camera_device.set_controls({"ExposureTime": X4_EXPOSURE_TIME})
+        elif self.current_zoom == "10x":
+            self.camera_device.set_controls({"ExposureTime": X10_EXPOSURE_TIME})
+        elif self.current_zoom == "40x":
+            self.camera_device.set_controls({"ExposureTime": X40_EXPOSURE_TIME})
+        else:
+            sys.exit("Invalid zoom level entered when setting exposure")
+        
+        print("Setting Exposure.")
+        time.sleep(10)
+        print(f"Exposure set for {self.current_zoom} zoom.")
 
     def focus(self):
-        if self.get_current_zoom == "":
+        if self.current_zoom == "":
             sys.exit("Current zoom not set.")
 
-        if self.get_current_zoom in ["4x", "10x"]:
+        if self.current_zoom in ["4x", "10x"]:
             self.focus_4x_10x()
-        elif self.get_current_zoom == "40x":
+        elif self.current_zoom == "40x":
             self.focus_40x()
         else:
             sys.exit("Unrecognised zoom level.")
 
     def focus_4x_10x(self):
+        print(f"Focusing at {self.current_zoom}")
         self.start_camera()
-        self.capture(FOCUS_PATH)
+        self.capture_focus_image()
         current_sharpness = self.calculate_sharpness()
-        best = [self.get_z_position, current_sharpness]
+        best = [self.z_position, current_sharpness]
         print(f"{'{:0>2}'.format(best[0])}: {best[1]}")
 
-        while self.get_z_position() < BOTTOM_LIMIT:
+        while self.z_position < BOTTOM_LIMIT:
             self.smart_move_z(1, "+")
-            self.capture(FOCUS_PATH)
+            self.capture_focus_image()
             current_sharpness = self.calculate_sharpness()
-            print(f"{'{:0>2}'.format(self.get_z_position)}: {current_sharpness}")
+            print(f"{'{:0>2}'.format(self.z_position)}: {current_sharpness}")
             if current_sharpness > best[1]:
-                best = [self.get_z_position, current_sharpness]
+                best = [self.z_position, current_sharpness]
 
-        return_steps = self.get_z_position - best[0]
+        return_steps = self.z_position - best[0]
         self.smart_move_z(return_steps, "-")
-        self.capture(FOCUS_PATH)
-        print(f"{'{:0>2}'.format(self.get_z_position)}: {self.calculate_sharpness()}")
-        self.stop()
+        self.capture_focus_image()
+        print(f"{'{:0>2}'.format(self.z_position)}: {self.calculate_sharpness()}")
+        self.stop_camera()
+        print("Focusing complete")
 
     def focus_40x(self):
+        print(f"Focusing at {self.current_zoom}")
         self.start_camera()
-        self.capture(FOCUS_PATH)
+        self.capture_focus_image()
         current_sharpness = self.calculate_sharpness()
-        best = [self.get_z_position, current_sharpness]
+        best = [self.z_position, current_sharpness]
         print(f"{'{:0>2}'.format(best[0])}: {best[1]}")
 
-        while self.get_z_position > TOP_LIMIT:
+        while self.z_position > TOP_LIMIT:
             self.smart_move_z(1, "-")
-            self.capture(FOCUS_PATH)
+            self.capture_focus_image()
             current_sharpness = self.calculate_sharpness()
-            print(f"{'{:0>2}'.format(self.get_z_position)}: {current_sharpness}")
+            print(f"{'{:0>2}'.format(self.z_position)}: {current_sharpness}")
             if current_sharpness > best[1]:
-                best = [self.get_z_position, current_sharpness]
+                best = [self.z_position, current_sharpness]
         
-        return_steps = best[0] - self.get_z_position()
+        return_steps = best[0] - self.z_position
         self.smart_move_z(return_steps, "+")
-        self.capture(FOCUS_PATH)
-        print(f"{'{:0>2}'.format(self.get_z_position)}: {self.calculate_sharpness()}")
-        self.stop()
+        self.capture_focus_image()
+        print(f"{'{:0>2}'.format(self.z_position)}: {self.calculate_sharpness()}")
+        self.stop_camera()
+        print("Focusing complete")
+        
+    def capture_focus_image(self):
+        if not self.camera_start:
+            sys.exit("Camera not started, unable to capture focus image.")
+        self.camera_device.capture_file(FOCUS_PATH)
 
     # Tenengrad method
     def calculate_sharpness(self):
@@ -310,8 +287,7 @@ class Autoscope(Arduino, Camera):
         self.take_picture_of_sample()
         cell_counts = self.count_cells()
         sorted_cell_counts = sorted(cell_counts, key=lambda cell_count: cell_count[1])
-        median = sorted_cell_counts[4][0]
-        self.set_median_area = median
+        self.median_area = sorted_cell_counts[4][0]
 
     def take_picture_of_sample(self):
         self.start_camera()
@@ -351,27 +327,20 @@ class Autoscope(Arduino, Camera):
         self.capture(SQUARE_GRID_PICTURES_PATHS[4])
 
         self.smart_move_x(16, "-")
-        self.stop()
+        self.stop_camera()
 
     # square grid images can be sent over as npy files instead to reduce upload time
-    def count_cells():
+    def count_cells(self):
         gauth = GoogleAuth()
         gauth.LocalWebserverAuth()
         drive = GoogleDrive(gauth) # authentication, requires client_secrets.json to function
-
-        if DRIVE_INPUT_FOLDER_ID == "":
-            DRIVE_INPUT_FOLDER_ID = input("Please enter drive input folder id: ")
-        if DRIVE_OUTPUT_FOLDER_ID == "":
-            DRIVE_OUTPUT_FOLDER_ID = input("Please enter drive output folder id: ")
 
         input_folder = drive.ListFile({'q' : f"'{DRIVE_INPUT_FOLDER_ID}' in parents and trashed=false"}).GetList()
         output_folder = drive.ListFile({'q' : f"'{DRIVE_OUTPUT_FOLDER_ID}' in parents and trashed=false"}).GetList()
 
         try:
-            for f in input_folder:
-                f.Delete()
-            for f in output_folder:
-                f.Delete()
+            for f in input_folder: f.Delete()
+            for f in output_folder: f.Delete()
             print("Previous temporary drive data deleted.")
         except Exception:
             print(f"Error deleting temporary drive data. Continuing")
@@ -405,41 +374,39 @@ class Autoscope(Arduino, Camera):
                     print(f"An error has occured: {e}. Try again.")
     
     def move_median_area(self):
-        median = self.get_median_area()
-
-        if median == 1:
+        if self.median_area == 1:
             self.smart_move_x(16, "+")
             self.smart_move_y(3, "-")
-        elif median == 2:
+        elif self.median_area == 2:
             self.smart_move_y(3, "-")
-        elif median == 3:
+        elif self.median_area == 3:
             self.smart_move_x(16, "-")
             self.smart_move_y(3, "-")
-        elif median == 4:
+        elif self.median_area == 4:
             self.smart_move_x(16, "+")
-        elif median == 6:
+        elif self.median_area == 6:
             self.smart_move_x(16, "-")
-        elif median == 7:
+        elif self.median_area == 7:
             self.smart_move_x(16, "+")
             self.smart_move_y(3, "+")
-        elif median == 8:
+        elif self.median_area == 8:
             self.smart_move_y(3, "+")
-        elif median == 9:
+        elif self.median_area == 9:
             self.smart_move_x(16, "-")
             self.smart_move_y(3, "+")
 
     def next_lens(self):
-        if self.get_current_zoom == "4x":
+        if self.current_zoom == "4x":
             self.move_lens(1, "-")
-            self.set_current_zoom = "10x"
+            self.current_zoom = "10x"
             self.focus_4x_10x()
-        elif self.get_current_zoom == "10x":
+        elif self.current_zoom == "10x":
             self.move_lens(1, "-")
-            self.set_current_zoom = "40x"
+            self.current_zoom = "40x"
             self.focus_40x()
-        elif self.get_current_zoom == "40x":
+        elif self.current_zoom == "40x":
             self.move_lens(1, "-")
-            self.set_current_zoom = "10x"
+            self.current_zoom = "10x"
             print("Please load next sample.")
         else:
             sys.exit("Unrecognised zoom level.")
