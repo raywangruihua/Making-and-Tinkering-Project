@@ -140,7 +140,7 @@ class Camera():
         if os.path.exists(filepath):
             query = ""
             while not(query in ["Y", "N"]):
-                query = input("Image with same name already exists, override? (Y\N): ")
+                query = input("Image with same name already exists, override? (Y/N): ")
                 if query == "Y":
                     break
                 else:
