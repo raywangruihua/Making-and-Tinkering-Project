@@ -9,6 +9,7 @@ from pydrive2.drive import GoogleDrive
 
 # tweak constants here to suit Autoscope and environment (exposure)
 # input drive folder ids before running count_cells method in Autoscope
+DEFAULT_ARDUINO_PORT = "/dev/ttyUSB0"
 X4_EXPOSURE_TIME  = 100_000
 X10_EXPOSURE_TIME = 500_000
 X40_EXPOSURE_TIME = 3_000_000
@@ -32,7 +33,7 @@ class Arduino():
         self.arduino_initialised = False
 
     # we used "/dev/ttyUSB0" as our default port for our set up
-    def initialise_arduino(self, port="/dev/ttyUSB0"):
+    def initialise_arduino(self, port=DEFAULT_ARDUINO_PORT):
         if self.arduino_initialised: 
 	        sys.exit("Arduino already connected, please disconnect Arduino first before making new connection.")
 
@@ -152,7 +153,7 @@ class Autoscope(Arduino, Camera):
         self.z_position = 0
         self.median_area = 5 # take center of sample as default
 
-    def initialise(self, arduino_port):
+    def initialise(self, arduino_port=DEFAULT_ARDUINO_PORT):
         self.initialise_arduino(arduino_port)
         self.initialise_camera()
         try:
