@@ -35,7 +35,7 @@ class Arduino():
     # we used "/dev/ttyUSB0" as our default port for our set up
     def initialise_arduino(self, port=DEFAULT_ARDUINO_PORT):
         if self.arduino_initialised: 
-	        sys.exit("Arduino already connected, please disconnect Arduino first before making new connection.")
+            sys.exit("Arduino already connected, please disconnect Arduino first before making new connection.")
 
         self.arduino_device = serial.Serial(port, 9600, timeout=1)
         self.arduino_device.reset_input_buffer()
@@ -126,13 +126,6 @@ class Camera():
     def capture(self, filepath):
         if not self.camera_start: 
             sys.exit("Camera not started, unable to capture images.")
-
-        if os.path.exists(filepath):
-            query = ""
-            while not(query in ["Y", "N"]):
-                query = input("Image with same name already exists, override? (Y/N): ")
-                if query == "Y": break 
-                else: return
         self.camera_device.capture_file(filepath)
 
     def stop_camera(self):
@@ -225,14 +218,14 @@ class Autoscope(Arduino, Camera):
     def focus_4x_10x(self):
         print(f"Focusing at {self.current_zoom}")
         self.start_camera()
-        self.capture_focus_image()
+        self.capture(FOCUS_PATH)
         current_sharpness = self.calculate_sharpness()
         best = [self.z_position, current_sharpness]
         print(f"{'{:0>2}'.format(best[0])}: {best[1]}")
 
         while self.z_position < BOTTOM_LIMIT:
             self.smart_move_z(1, "+")
-            self.capture_focus_image()
+            self.capture(FOCUS_PATH)
             current_sharpness = self.calculate_sharpness()
             print(f"{'{:0>2}'.format(self.z_position)}: {current_sharpness}")
             if current_sharpness > best[1]:
@@ -240,7 +233,7 @@ class Autoscope(Arduino, Camera):
 
         return_steps = self.z_position - best[0]
         self.smart_move_z(return_steps, "-")
-        self.capture_focus_image()
+        self.capture(FOCUS_PATH)
         print(f"{'{:0>2}'.format(self.z_position)}: {self.calculate_sharpness()}")
         self.stop_camera()
         print("Focusing complete")
@@ -248,14 +241,14 @@ class Autoscope(Arduino, Camera):
     def focus_40x(self):
         print(f"Focusing at {self.current_zoom}")
         self.start_camera()
-        self.capture_focus_image()
+        self.capture(FOCUS_PATH)
         current_sharpness = self.calculate_sharpness()
         best = [self.z_position, current_sharpness]
         print(f"{'{:0>2}'.format(best[0])}: {best[1]}")
 
         while self.z_position > TOP_LIMIT:
             self.smart_move_z(1, "-")
-            self.capture_focus_image()
+            self.capture(FOCUS_PATH)
             current_sharpness = self.calculate_sharpness()
             print(f"{'{:0>2}'.format(self.z_position)}: {current_sharpness}")
             if current_sharpness > best[1]:
@@ -263,15 +256,10 @@ class Autoscope(Arduino, Camera):
         
         return_steps = best[0] - self.z_position
         self.smart_move_z(return_steps, "+")
-        self.capture_focus_image()
+        self.capture(FOCUS_PATH)
         print(f"{'{:0>2}'.format(self.z_position)}: {self.calculate_sharpness()}")
         self.stop_camera()
         print("Focusing complete")
-        
-    def capture_focus_image(self):
-        if not self.camera_start:
-            sys.exit("Camera not started, unable to capture focus image.")
-        self.camera_device.capture_file(FOCUS_PATH)
 
     # Tenengrad method
     def calculate_sharpness(self):
@@ -416,26 +404,25 @@ class Autoscope(Arduino, Camera):
         folder_name = input("Input cell/folder name to store images: ")
         number = 1
         folder_path = os.path.join(DATA_FOLDER_PATH, folder_name)
-        self.capture(os.path.join(folder_path, f"{number}.jpg"))
+        self.capture(os.path.join(folder_path, f"{self.current_time()}.jpg"))
 
         for i in range(5):
             if i % 2 == 0:
                 for _ in range(1 + i):
                     self.smart_move_y(1, "-")
-                    number += 1
-                    self.capture(os.path.join(folder_path, f"{number}.jpg"))
+                    self.capture(os.path.join(folder_path, f"{self.current_time()}.jpg"))
                 for _ in range(1 + i):
                     self.smart_move_x(1, "-")
-                    number += 1
-                    self.capture(os.path.join(folder_path, f"{number}.jpg"))
+                    self.capture(os.path.join(folder_path, f"{self.current_time()}.jpg"))
             else:
                 for _ in range(1 + i):
                     self.smart_move_y(1, "+")
-                    number += 1
-                    self.capture(os.path.join(folder_path, f"{number}.jpg"))
+                    self.capture(os.path.join(folder_path, f"{self.current_time()}.jpg"))
                 for _ in range(1 + i):
                     self.smart_move_x(1, "+")
-                    number += 1
-                    self.capture(os.path.join(folder_path, f"{number}.jpg"))
+                    self.capture(os.path.join(folder_path, f"{self.current_time()}.jpg"))
 
         print(f"Data collection complete: {number} images collected.")
+
+    def current_time(self):
+        return time.strftime("%d%m%y%H%M%S", time.localtime())

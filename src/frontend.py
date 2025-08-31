@@ -1,4 +1,5 @@
-from backend import Autoscope
+import os
+from backend import Autoscope, DATA_FOLDER_PATH
 from PySide6.QtWidgets import (
     QLabel, QPushButton, QStackedWidget,
     QVBoxLayout, QWidget, QLineEdit
@@ -13,6 +14,7 @@ class MainMenu(QWidget):
         self.autoscope = None
         self.manual_menu = None
         self.auto_menu = None
+
         self.setWindowTitle("Main Menu")
         self.resize(400, 200)
 
@@ -57,6 +59,7 @@ class AutoWindow(QWidget):
     def __init__(self, autoscope: Autoscope):
         super().__init__()
         self.autoscope = autoscope
+        self.manual = None
 
         self.setWindowTitle("Auto Window")
         self.resize(400, 200)
@@ -76,12 +79,12 @@ class AutoWindow(QWidget):
         self.query_page = QWidget()
         self.layout_query_page = QVBoxLayout(self.query_page)
 
-        self.query_error = QLabel()
+        self.query_error_label = QLabel()
         self.query_label = QLabel("Enter starting zoom (4x, 10x, 40x):")
         self.zoom_query = QLineEdit()
         self.zoom_query.returnPressed.connect(self.get_zoom_query)
 
-        self.layout_query_page.addWidget(self.query_error)
+        self.layout_query_page.addWidget(self.query_error_label)
         self.layout_query_page.addWidget(self.query_label)
         self.layout_query_page.addWidget(self.zoom_query)
 
@@ -98,10 +101,12 @@ class AutoWindow(QWidget):
         self.layout_choice_page = QVBoxLayout(self.choice_page)
 
         self.choice_save_image = QPushButton("Save image")
+        self.choice_manual_mode = QPushButton("Manual mode")
         self.choice_collect_data = QPushButton("Collect data")
         self.choice_close = QPushButton("Close automatic mode")
 
         self.choice_save_image.clicked.connect(self.save_image)
+        self.choice_manual_mode.clicked.connect(self.create_manual_menu)
         self.choice_collect_data.clicked.connect(self.collect_data)
         self.choice_close.clicked.connect(self.stacked_widget.close)
 
@@ -126,7 +131,7 @@ class AutoWindow(QWidget):
         if starting_zoom in valid_zoom:
             self.workflow(starting_zoom)
         else:
-            self.query_error.setText("Invalid zoom entered.")
+            self.query_error_label.setText("Invalid zoom entered.")
 
     def workflow(self, starting_zoom):
         self.stacked_widget.setCurrentIndex(self.working_page_index)
@@ -137,7 +142,13 @@ class AutoWindow(QWidget):
         self.stacked_widget.setCurrentIndex(self.choice_page_index)
 
     def save_image(self):
-        self.autoscope.
+        filename = input("Enter name for image.")
+        filepath = os.path.join(DATA_FOLDER_PATH, filename)
+        self.autoscope.capture(filename)
+
+    def create_manual_menu(self):
+        self.manual = ManualWindow(self.autoscope)
+        self.manual.show()
 
     def collect_data(self):
         self.autoscope.collect_data()
@@ -153,7 +164,8 @@ class ManualWindow(QWidget):
 
         self.label = QLabel("Autoscope Manual Mode.\n" \
         "Use WASD for movement.\n" \
-        "Use I and O keys to zoom in and out of the image.\n" \
+        "Use Q and E keys to zoom in and out of the image.\n" \
+        "Press F to save an image.\n" \
         "Press Escape to quit manual mode.")
 
         layout = QVBoxLayout()
@@ -169,9 +181,68 @@ class ManualWindow(QWidget):
             self.autoscope.smart_move_x(1, "-")
         elif event.key() == Qt.Key_D:
             self.autoscope.smart_move_x(1, "+")
-        elif event.key() == Qt.Key_I:
+        elif event.key() == Qt.Key_Q:
             self.autoscope.smart_move_z(1, "+")
-        elif event.key() == Qt.Key_O:
+        elif event.key() == Qt.Key_E:
             self.autoscope.smart_move_z(1, "-")
+        elif event.key() == Qt.Key_F:
+            filename = input("Enter image name here: ")
+            filepath = os.path.join(DATA_FOLDER_PATH, filename)
+            self.autoscope.capture()
         elif event.key() == Qt.Key_Escape:
             self.close()
+
+class SaveImageWindow(QWidget):
+    def __init__(self, autoscope: Autoscope):
+        super.__init__()
+        self.autoscope = autoscope
+        self.filepath = ""
+
+        self.setWindowTitle("Save Image")
+        self.resize(400, 200)
+
+        self.stacked_widget = QStackedWidget()
+
+        # main page
+        self.main_page = QWidget()
+        self.main_layout = QVBoxLayout(self.main_page)
+        self.main_label = QLabel("Enter image name")
+
+        self.image_name_query = QLineEdit()
+        self.image_name_query.returnPressed.connect(self.query_image_name)
+
+        self.main_layout.addWidget(self.main_label)
+        self.main_layout.addWidget(self.image_name_query)
+
+        # overwrite confirmation page
+        self.overwrite_page = QWidget()
+        self.overwrite_layout = QVBoxLayout(self.overwrite_page)
+        self.overwrite_label = QLabel("Image with same name already exists, replace?")
+
+        self.overwrite_button_yes = QPushButton("Yes")
+        self.overwrite_button_no = QPushButton("No")
+
+        self.overwrite_button_yes.clicked.connect(self.save_image)
+        self.overwrite_button_no.clicked.connect(lambda: self.stacked_widget.setCurrentIndex(self.main_index))
+
+        self.overwrite_layout.addWidget(self.overwrite_label)
+        self.overwrite_layout.addWidget(self.overwrite_button_yes)
+        self.overwrite_layout.addWidget(self.overwrite_button_no)
+
+        # index pages
+        self.main_index = self.stacked_widget.addWidget(self.main_page)
+        self.overwrite_index = self.stacked_widget.addWidget(self.overwrite_page)
+
+        self.stacked_widget.setCurrentIndex(self.main_index)
+
+    def query_image_name(self):
+        filename = self.image_name_query.text()
+        self.filepath = os.path.join(DATA_FOLDER_PATH, filename)
+        if os.path.exists(self.filepath):
+            self.stacked_widget.setCurrentIndex(self.overwrite_index)
+        else:
+            self.save_image()
+            self.close()
+
+    def save_image(self):
+        self.autoscope.capture(self.filepath)
